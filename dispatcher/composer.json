@@ -1,0 +1,19 @@
+{
+    "name": "emf/mq",
+    "description": "Redis Message Queue for EMF",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Anton Shedlovsky",
+            "email": "alfaluck@gmail.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^6.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Emf\\MQ\\": "./core/"
+        }
+    }
+}
