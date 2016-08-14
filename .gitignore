@@ -3,4 +3,4 @@
 
 # Composer related
 *composer.lock
-*/vendor/
+#*/vendor/
