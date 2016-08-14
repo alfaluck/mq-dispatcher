@@ -10,9 +10,14 @@ namespace Emf\MQ;
 
 defined('BASE_PATH') || exit('No direct script access allowed');
 
+/**
+ * Class Dispatcher
+ * @package Emf\MQ
+ */
 class Dispatcher
 {
     /**
+     * Runs dispatcher
      * @param Config $config
      */
     static public function run(Config $config)
@@ -29,27 +34,37 @@ class Dispatcher
             echo date('Y-m-d h:i:s') . " (UTC) >\tThrowable caught" . PHP_EOL;
             $status = 1;
         }
+
+        $dispatcher->print_results();
+        echo date('Y-m-d h:i:s') . " (UTC) >\tDispatcher stopped successfully" . PHP_EOL;
         exit($status);
     }
 
 
     /**
+     * Flag to stop dispatcher
      * @var bool Flag to stop dispatcher
      */
     public $stop_dispatcher = false;
 
     /**
+     * Stores dispatcher configuration parameters
      * @var Config Dispatcher configuration
      */
     private $config;
+
     /**
+     * Stores jobs which are active
      * @var [JobInterface] Array of all active jobs
      */
     private $jobs = [];
+
     /**
+     * Stores result of all triggered jobs
      * @var array
      */
     private $jobs_results = [];
+
 
     /**
      * Dispatcher constructor.
@@ -61,6 +76,7 @@ class Dispatcher
     }
 
     /**
+     * Initializes dispatcher
      * @return $this
      */
     public function init()
@@ -71,6 +87,7 @@ class Dispatcher
     }
 
     /**
+     * Starts active jobs one by one
      * @return int
      */
     public function start()
@@ -78,21 +95,12 @@ class Dispatcher
         echo date('Y-m-d h:i:s') . " (UTC) >\tDispatcher started" . PHP_EOL;
         while (!$this->stop_dispatcher) {
             foreach ($this->jobs as $worker) {
-                $worker->run();
+                $worker->start();
                 if ($this->stop_dispatcher) break;
             }
             pcntl_signal_dispatch();
             $this->stop_dispatcher or sleep(1);
         }
-
-        if (empty($this->jobs_results)) {
-            echo PHP_EOL . date('Y-m-d h:i:s') . " (UTC) >\tJob results:" . PHP_EOL;
-            foreach ($this->jobs_results as $name => $value) {
-                echo date('Y-m-d h:i:s') . " (UTC) >\t{$name}: {$value}" . PHP_EOL;
-            }
-            echo PHP_EOL;
-        }
-        echo date('Y-m-d h:i:s') . " (UTC) >\tDispatcher stopped successfully" . PHP_EOL;
         return 0;
     }
 
@@ -106,6 +114,7 @@ class Dispatcher
     }
 
     /**
+     * Returns dispatcher configuration
      * @return Config
      */
     public function config()
@@ -114,6 +123,7 @@ class Dispatcher
     }
 
     /**
+     * Increases successful results for certain job
      * @param string $job_name
      * @return $this
      */
@@ -125,7 +135,21 @@ class Dispatcher
     }
 
     /**
-     * Dispatcher destructor.
+     * Echoes results of all triggered jobs
+     */
+    public function print_results()
+    {
+        if (!empty($this->jobs_results)) {
+            echo PHP_EOL . date('Y-m-d h:i:s') . " (UTC) >\tJob results:" . PHP_EOL;
+            foreach ($this->jobs_results as $name => $value) {
+                echo date('Y-m-d h:i:s') . " (UTC) >\t{$name}: {$value}" . PHP_EOL;
+            }
+            echo PHP_EOL;
+        }
+    }
+
+    /**
+     * Dispatcher destructor
      */
     public function __destruct()
     {
@@ -136,7 +160,9 @@ class Dispatcher
 
 
     /**
+     * Fetches jobs data from jobs_config.inc and creates objects for each active job
      * @return $this
+     * @throws \UnexpectedValueException
      */
     private function fetch_jobs()
     {
@@ -145,7 +171,7 @@ class Dispatcher
             if ($data['active']) {
                 $class_name = 'Emf\\MQ\\Jobs\\' . $data['class'];
                 $this->jobs[$name] = new $class_name($this);
-                if (!($this->jobs[$name] instanceof JobInterface)) {
+                if (!($this->jobs[$name] instanceof AbstractJob)) {
                     throw new \UnexpectedValueException("Wrong class '{$class_name}' for job {$name}'");
                 }
             }

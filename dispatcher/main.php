@@ -10,5 +10,6 @@ define('BASE_PATH', __DIR__);
 
 require BASE_PATH . '/vendor/autoload.php';
 
+// Running dispatcher
 Emf\MQ\Dispatcher::run(new Emf\MQ\Config());
 
