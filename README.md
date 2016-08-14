@@ -7,6 +7,7 @@ Message Queue Dispatcher based on Docker Containers
 - handles `docker stop` command
 - runs unlimited number of Jobs
 - uses REDIS as queue-server and MySQL as main data-server
+- uses PHPMailer as SMTP client
 - uses **Deferred-Queue** for those emails which were been failed
 - uses **ENV docker variables** to configure Dispatcher parameters
 

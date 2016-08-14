@@ -19,4 +19,11 @@ ENV mysql_password null
 ENV mysql_db_name test
 ENV mysql_port 3306
 
+ENV mailer_host smtp.sparkpostmail.com
+ENV mailer_port 587
+ENV mailer_secure tls
+ENV mailer_auth true
+ENV mailer_username SMTP_Injection
+ENV mailer_password test_api_key
+
 CMD ["run"]

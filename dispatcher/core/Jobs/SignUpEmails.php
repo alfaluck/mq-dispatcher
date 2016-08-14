@@ -154,6 +154,11 @@ class SignUpEmails extends AbstractJob implements JobInterface
     private function send_email(array $email_data) : bool
     {
         // send email via provider
+        // https://github.com/PHPMailer/PHPMailer#a-simple-example
+        // https://github.com/SparkPost/code-snippets/blob/master/snippets/SMTP/smtp_example.php
+        // https://developers.sparkpost.com/api/smtp-api
+        // https://mandrill.zendesk.com/hc/en-us/articles/205582147-How-to-Send-with-PHPMailer
+        // https://www.sitepoint.com/sending-emails-php-phpmailer/
         return true;
     }
 
