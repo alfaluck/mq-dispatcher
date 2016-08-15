@@ -37,6 +37,7 @@ Message Queue Dispatcher based on Docker Containers
 The `env_file_name.ext` must contain, for example:
 
 ```
+
 redis_host=localhost
 redis_port=6379
 redis_connection_timeout=3.5
@@ -50,6 +51,14 @@ mysql_username=root
 mysql_password=null
 mysql_db_name=test
 mysql_port=3306
+
+mailer_host=smtp.sparkpostmail.com
+mailer_port=587
+mailer_secure=tls
+mailer_auth=true
+mailer_username=SMTP_Injection
+mailer_password=test_api_key
+
 ```
 
-Work in progress
+Work in progress...

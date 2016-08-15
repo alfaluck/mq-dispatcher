@@ -8,6 +8,8 @@
 
 namespace Emf\MQ;
 
+use GuzzleHttp\Promise\Tests\Thing1;
+
 defined('BASE_PATH') || exit('No direct script access allowed');
 
 /**
@@ -26,17 +28,19 @@ class Dispatcher
             date_default_timezone_set('UTC');
 
             $dispatcher = new self($config);
+            // Running infinitive loop until Jobs Queue becomes empty
+            // or Dispatcher receives SIGTERM (triggered by `docker stop`)
             $status = $dispatcher
                 ->init()
                 ->start();
+            $dispatcher->print_results();
+            echo date('Y-m-d h:i:s') . " (UTC) >\tDispatcher stopped successfully" . PHP_EOL;
         } catch (\Throwable $throwable) {
             // handle errors and exceptions
-            echo date('Y-m-d h:i:s') . " (UTC) >\tThrowable caught" . PHP_EOL;
+            echo date('Y-m-d h:i:s') . " (UTC) >\tThrowable caught out of jobs loop" . PHP_EOL;
             $status = 1;
         }
 
-        $dispatcher->print_results();
-        echo date('Y-m-d h:i:s') . " (UTC) >\tDispatcher stopped successfully" . PHP_EOL;
         exit($status);
     }
 
@@ -94,8 +98,16 @@ class Dispatcher
     {
         echo date('Y-m-d h:i:s') . " (UTC) >\tDispatcher started" . PHP_EOL;
         while (!$this->stop_dispatcher) {
-            foreach ($this->jobs as $worker) {
-                $worker->start();
+            if (empty($this->jobs)) {
+                echo date('Y-m-d h:i:s') . " (UTC) >\tJobs queue is empty. Going to stop dispatcher" . PHP_EOL;
+                $this->stop_dispatcher = true;
+            }
+            foreach ($this->jobs as $name => $job) {
+                try {
+                    $job->start();
+                } catch (\Throwable $throwable) {
+                    $this->handle_job_exception($name, $throwable);
+                }
                 if ($this->stop_dispatcher) break;
             }
             pcntl_signal_dispatch();
@@ -178,5 +190,61 @@ class Dispatcher
         }
 
         return $this;
+    }
+
+    /**
+     * Handles exceptions that had benn thrown by jobs
+     * @param string $job_id
+     * @param \Throwable $throwable
+     */
+    private function handle_job_exception(string $job_id, \Throwable $throwable)
+    {
+        // Handle job exception
+
+        // Log Exception
+        echo date('Y-m-d h:i:s') . " (UTC) >\tJob '{$job_id}' had thrown an Exception:" . PHP_EOL;
+        $this->log_exception($throwable);
+
+        // How we will react on exceptions thrown by job?
+
+        // Just remove this job from queue
+        /*
+        if (isset($this->jobs[$job_id])) unset($this->jobs[$job_id]);
+        echo date('Y-m-d h:i:s') . " (UTC) >\tJob '{$job_id}' had been removed from the jobs queue" . PHP_EOL;
+        */
+
+        // Or it can be implemented a counter and after 10 times certain job had thrown an exception
+        // then remove this job
+        /*
+        static $counter = [];
+        $counter[$job_id] = $counter[$job_id] ?? 0;
+        if (++$counter[$job_id] >= 10) {
+            unset($this->jobs[$job_id]);
+            $counter[$job_id] = 0;
+            echo date('Y-m-d h:i:s') . " (UTC) >\tJob '{$job_id}' had been removed from the jobs queue" . PHP_EOL;
+        }
+        */
+    }
+
+    /**
+     * Echoes exception data including nested previous exception
+     * @param \Throwable $throwable
+     */
+    private function log_exception(\Throwable $throwable)
+    {
+        static $indent = '';
+
+        $indent .= "\t";
+        echo $indent . get_class($throwable) . " (#{$throwable->getCode()}): {$throwable->getMessage()}" . PHP_EOL;
+        echo $indent . "In {$throwable->getFile()} at line #{$throwable->getLine()}" . PHP_EOL;
+        echo $indent . "Stack trace:" . PHP_EOL;
+        foreach ($throwable->getTrace() as $number => $line) {
+            echo $indent . "\t#{$number} {$line['file']}({$line['line']}): {$line['function']}(" . implode(', ', $line['args']) . ")" . PHP_EOL;
+        }
+        if (!is_null($throwable->getPrevious())) {
+            echo $indent . "Previous Throwable:" . PHP_EOL;
+            $this->log_exception($throwable->getPrevious());
+        }
+        $indent = '';
     }
 }

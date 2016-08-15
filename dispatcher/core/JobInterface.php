@@ -30,7 +30,9 @@ interface JobInterface
 
     /**
      * Execution unit of job
-     * @return bool|null
+     * @return bool|null    Null means that there is necessary to interrupt job.
+     *                      True means job has finished task successfully.
+     *                      False means task has failed.
      */
     public function run();
 
